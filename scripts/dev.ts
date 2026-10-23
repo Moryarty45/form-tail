@@ -16,7 +16,7 @@ const result = await context({
   loader: { ".css": "css" },
 })
 
-async function body(file: string): Promise<Buffer | string> {
+async function body(file: string): Promise<Uint8Array | string> {
   try {
     return await readFile(file)
   } catch {
@@ -24,21 +24,24 @@ async function body(file: string): Promise<Buffer | string> {
   }
 }
 
-const server = createServer(async (request, response) => {
+const server = createServer((request, response) => {
   const url = new URL(request.url ?? "/", "http://127.0.0.1")
   if (url.pathname === "/main.js") {
     response.writeHead(200, { "content-type": "text/javascript; charset=utf-8" })
-    response.end(await body(path.join(outdir, "main.js")))
-    return
+    return body(path.join(outdir, "main.js")).then((contents) => {
+      response.end(contents)
+    })
   }
   if (url.pathname === "/main.css") {
     response.writeHead(200, { "content-type": "text/css; charset=utf-8" })
-    response.end(await body(path.join(outdir, "main.css")))
-    return
+    return body(path.join(outdir, "main.css")).then((contents) => {
+      response.end(contents)
+    })
   }
-  const html = await readFile("playground/index.html", "utf8")
-  response.writeHead(200, { "content-type": "text/html; charset=utf-8" })
-  response.end(html.replace("./main.tsx", "/main.js"))
+  return readFile("playground/index.html", "utf8").then((html) => {
+    response.writeHead(200, { "content-type": "text/html; charset=utf-8" })
+    response.end(html.replace("./main.tsx", "/main.js"))
+  })
 })
 
 await result.watch()

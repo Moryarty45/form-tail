@@ -4,7 +4,8 @@ import { afterEach, describe, expect, it, vi } from "vitest"
 import { createPartEngine } from "../core/engine.ts"
 import { memoryUsageStore } from "../core/store.ts"
 import type { LexiconEntry } from "../core/types.ts"
-import { FormTailInput } from "./form-tail-input.tsx"
+import { createFioSuggest } from "../fio/create-fio-suggest.ts"
+import { FormTailInput, useFioFields } from "./form-tail-input.tsx"
 
 const entries: LexiconEntry[] = [
   { value: "Александр", weight: 10, gender: "male" },
@@ -98,5 +99,76 @@ describe("FormTailInput", () => {
     const secondInput = screen.getByRole("textbox", { name: "Второе" })
     fireEvent.change(secondInput, { target: { value: "Алек" } })
     expect(await screen.findByText("сей")).toBeTruthy()
+  })
+
+  it("blur коммитит последнюю строку, а не значение прошлого рендера", () => {
+    const field = engine()
+    const commit = vi.spyOn(field, "commit")
+    render(<FormTailInput aria-label="Имя" engine={field} />)
+    const input = screen.getByRole("textbox", { name: "Имя" })
+    fireEvent.change(input, { target: { value: "Алексей" } })
+    fireEvent.change(input, { target: { value: "Мария" } })
+    fireEvent.blur(input)
+    expect(commit).toHaveBeenCalledWith("Мария")
+  })
+
+  it("отказ suggest убирает хвост и не остаётся необработанным", async () => {
+    const field = engine()
+    vi.spyOn(field, "suggest").mockRejectedValue(new Error("корзина недоступна"))
+    render(<FormTailInput aria-label="Имя" engine={field} />)
+    fireEvent.change(screen.getByRole("textbox", { name: "Имя" }), { target: { value: "Алек" } })
+    await Promise.resolve()
+    expect(screen.queryByText("сандр")).toBeNull()
+  })
+
+  it("preventDefault хоста отменяет принятие хвоста", async () => {
+    render(
+      <FormTailInput
+        aria-label="Имя"
+        engine={engine()}
+        onKeyDown={(event) => {
+          event.preventDefault()
+        }}
+      />,
+    )
+    const input = screen.getByRole("textbox", { name: "Имя" })
+    fireEvent.change(input, { target: { value: "Алек" } })
+    await screen.findByText("сандр")
+    fireEvent.keyDown(input, { key: "Tab" })
+    expect(input).toHaveProperty("value", "Алек")
+  })
+})
+
+describe("useFioFields", () => {
+  it("видит имя в том же тике без setGiven", async () => {
+    const fio = createFioSuggest({
+      locale: "ru",
+      lexicons: {
+        load(_part, letter) {
+          const pool = [
+            { value: "Мария", weight: 2, gender: "female" as const },
+            { value: "Иванович", weight: 2, gender: "male" as const },
+            { value: "Ивановна", weight: 2, gender: "female" as const },
+          ]
+          return Promise.resolve(pool.filter((entry) => entry.value.toLocaleLowerCase("ru").startsWith(letter)))
+        },
+      },
+    })
+
+    function Form() {
+      const fields = useFioFields({ fio })
+      return (
+        <>
+          <FormTailInput aria-label="Имя" engine={fields.given} />
+          <FormTailInput aria-label="Отчество" engine={fields.patronymic} />
+        </>
+      )
+    }
+
+    render(<Form />)
+    fireEvent.change(screen.getByRole("textbox", { name: "Имя" }), { target: { value: "Мария" } })
+    fireEvent.change(screen.getByRole("textbox", { name: "Отчество" }), { target: { value: "Иван" } })
+    expect(await screen.findByText("овна")).toBeTruthy()
+    expect(screen.queryByText("ович")).toBeNull()
   })
 })

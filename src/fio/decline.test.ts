@@ -23,7 +23,7 @@ describe("declineFio", () => {
     expect(result.cases.instrumental.patronymic).toBe("Сергеевной")
   })
 
-  it("не склоняет Шевченко и мужские имена на -а", () => {
+  it("не склоняет Шевченко и склоняет мужские имена на -а", () => {
     const result = declineFio(
       { surname: "Шевченко", given: "Никита", patronymic: "Петрович" },
       "male",
@@ -42,5 +42,22 @@ describe("declineFio", () => {
     const result = declineFio({ surname: "Иванова", given: "Иван" }, "male")
     expect(result.cases.genitive.surname).toBe("Ивановой")
     expect(result.cases.genitive.given).toBe("Ивана")
+  })
+
+  it("склоняет исключения Лев, Пётр и Павел", () => {
+    expect(declineFio({ given: "Лев" }, "male").cases.genitive.given).toBe("Льва")
+    expect(declineFio({ given: "Лев" }, "male").cases.instrumental.given).toBe("Львом")
+    expect(declineFio({ given: "Пётр" }, "male").cases.genitive.given).toBe("Петра")
+    expect(declineFio({ given: "Пётр" }, "male").cases.prepositional.given).toBe("Петре")
+    expect(declineFio({ given: "Павел" }, "male").cases.genitive.given).toBe("Павла")
+    expect(declineFio({ given: "Павел" }, "male").cases.instrumental.given).toBe("Павлом")
+  })
+
+  it("склоняет фамилию-прилагательное и оставляет неизвестное окончание", () => {
+    const result = declineFio({ surname: "Толстой", given: "Ким" }, "male")
+    expect(result.cases.genitive.surname).toBe("Толстого")
+    expect(result.cases.dative.surname).toBe("Толстому")
+    expect(result.cases.genitive.given).toBe("Кима")
+    expect(declineFio({ surname: "Дюма" }, "female").cases.genitive.surname).toBe("Дюма")
   })
 })

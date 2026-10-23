@@ -37,7 +37,7 @@ const suggestion = await fio.given.suggest("Алек")
 npm install form-tail react
 ```
 
-React нужен только для `form-tail/react`. Ядро и словарь от него не зависят. Node 20 или новее.
+React нужен только для `form-tail/react`. Ядро и словарь от него не зависят. Node 20.11 или новее.
 
 ## Быстрый старт
 

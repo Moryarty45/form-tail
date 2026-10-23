@@ -1,0 +1,13 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "types": [],
+    "paths": {
+      "form-tail": ["./src/index.ts"],
+      "form-tail/react": ["./src/react/index.ts"],
+      "form-tail/ru": ["./src/ru/index.ts"]
+    }
+  },
+  "include": ["examples/node.ts", "examples/react.tsx"],
+  "exclude": []
+}

@@ -72,32 +72,57 @@ export interface JsonUsageStoreOptions {
  * JSON-адаптер без `fs` и Electron. Хост владеет путём: это должен быть user data,
  * не каталог установки.
  * Повторное чтение битого файла не затирает его, пока не случится новый commit.
+ * Ошибка чтения отклоняет `ready` и `flush` и не планирует запись:
+ * пустая память не должна затереть нечитаемый файл.
  */
 export function createJsonUsageStore(options: JsonUsageStoreOptions): UsageStore & {
-  /** Дожидается первого чтения. Повторный вызов безопасен. */
+  /** Дожидается первого чтения. Повторный вызов возвращает тот же промис. */
   ready: () => Promise<void>
 } {
   const debounceMs = options.debounceMs ?? 300
   let file = EMPTY()
-  let dirty = false
+  let generation = 0
+  let persistedGeneration = 0
   let timer: ReturnType<typeof setTimeout> | undefined
-  let writing: Promise<void> = Promise.resolve()
+  let queue: Promise<void> = Promise.resolve()
+  let readError: Error | undefined
 
-  const ready = options.read().then((raw) => {
-    if (raw.trim().length > 0) file = parseUsageFile(raw)
-  })
+  const ready = options.read().then(
+    (raw) => {
+      if (raw.trim().length > 0) file = parseUsageFile(raw)
+    },
+    (error: unknown) => {
+      readError = error instanceof Error ? error : new Error("не удалось прочитать файл частот")
+      throw readError
+    },
+  )
 
-  async function persist(): Promise<void> {
-    await ready
-    if (!dirty) return
-    dirty = false
-    const snapshot = JSON.stringify(file)
-    writing = options.write(snapshot)
-    await writing
+  function snapshot(): string {
+    return JSON.stringify(file)
+  }
+
+  function enqueue(run: () => Promise<void>): Promise<void> {
+    const next = queue.then(run, run)
+    queue = next.then(
+      () => undefined,
+      () => undefined,
+    )
+    return next
+  }
+
+  function persist(): Promise<void> {
+    return enqueue(async () => {
+      await ready
+      while (generation !== persistedGeneration) {
+        const writing = generation
+        const contents = snapshot()
+        await options.write(contents)
+        persistedGeneration = writing
+      }
+    })
   }
 
   function schedule(): void {
-    dirty = true
     if (timer !== undefined) clearTimeout(timer)
     timer = setTimeout(() => {
       timer = undefined
@@ -112,6 +137,8 @@ export function createJsonUsageStore(options: JsonUsageStoreOptions): UsageStore
     },
     increment(part, key) {
       file.parts[part][key] = (file.parts[part][key] ?? 0) + 1
+      generation += 1
+      if (readError !== undefined) return
       schedule()
     },
     async flush() {
@@ -119,8 +146,10 @@ export function createJsonUsageStore(options: JsonUsageStoreOptions): UsageStore
         clearTimeout(timer)
         timer = undefined
       }
-      await persist()
-      await writing
+      if (readError !== undefined) throw readError
+      await ready
+      if (generation !== persistedGeneration) await persist()
+      await queue
     },
   }
 }

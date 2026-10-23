@@ -20,9 +20,6 @@ export default defineConfig([
     ...shared,
     entry: { "react/index": "src/react/index.ts" },
     external: ["react", "react/jsx-runtime"],
-    esbuildOptions(options) {
-      options.jsx = "automatic"
-    },
   },
   {
     ...shared,

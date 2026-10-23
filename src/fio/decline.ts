@@ -1,5 +1,11 @@
 import type { Gender } from "../core/types.ts"
 
+/**
+ * Таблица окончаний основана на публичных правилах Petrovich
+ * и сужена до контракта form-tail: неизвестное окончание не склоняется.
+ * Ударение и пол здесь не угадываются.
+ */
+
 /** Падеж единственного числа. Предлог в результат не входит. */
 export type GrammaticalCase =
   | "nominative"
@@ -32,6 +38,7 @@ export interface Declension {
 }
 
 type PersonGender = Exclude<Gender, "unknown">
+/** Родительный, дательный, винительный, творительный, предложный. */
 type Mod = readonly [string, string, string, string, string]
 
 const INDECLINABLE_SURNAME = /(?:енко|ко|ых|их|ово|аго|[еёиоуыэю])$/u
@@ -47,45 +54,50 @@ function stem(value: string, cut: number): string {
   return value.slice(0, Math.max(0, value.length - cut))
 }
 
-function surnameMod(value: string, gender: PersonGender): Mod | null {
+function apply(value: string, mod: Mod | null, cut: number, grammaticalCase: GrammaticalCase): string {
+  if (grammaticalCase === "nominative" || mod === null) return value
+  const ending = mod[GRAMMATICAL_CASES.indexOf(grammaticalCase) - 1]
+  return ending === undefined ? value : stem(value, cut) + ending
+}
+
+function surnameMod(value: string, gender: PersonGender): { mod: Mod; cut: number } | null {
   const key = fold(value)
   if (INDECLINABLE_SURNAME.test(key) && !ADJECTIVE_SURNAME.test(key) && !FEMININE_SURNAME.test(key)) {
     return null
   }
-  if (/(?:ова|ева|ёва|ина|ына)$/u.test(key)) return ["ой", "ой", "у", "ой", "ой"]
-  if (/ая$/u.test(key)) return ["ой", "ой", "ую", "ой", "ой"]
-  if (/яя$/u.test(key)) return ["ей", "ей", "юю", "ей", "ей"]
-  if (/(?:ий|ый)$/u.test(key)) return ["ого", "ому", "ого", "ым", "ом"]
-  if (/ой$/u.test(key)) return ["ого", "ому", "ого", "ым", "ом"]
+  if (/(?:ова|ева|ёва|ина|ына)$/u.test(key)) return { cut: 1, mod: ["ой", "ой", "у", "ой", "ой"] }
+  if (key.endsWith("ая")) return { cut: 1, mod: ["ой", "ой", "ую", "ой", "ой"] }
+  if (key.endsWith("яя")) return { cut: 1, mod: ["ей", "ей", "юю", "ей", "ей"] }
+  if (/(?:ий|ый|ой)$/u.test(key)) return { cut: 2, mod: ["ого", "ому", "ого", "ым", "ом"] }
   if (gender === "female") return null
-  if (/(?:ов|ев|ёв|ин|ын)$/u.test(key)) return ["а", "у", "а", "ым", "е"]
+  if (/(?:ов|ев|ёв|ин|ын)$/u.test(key)) return { cut: 0, mod: ["а", "у", "а", "ым", "е"] }
   return null
 }
 
-function givenMod(value: string, gender: PersonGender): Mod | null {
+function givenMod(value: string, gender: PersonGender): { mod: Mod; cut: number } | null {
   const key = fold(value)
-  if (key === "лев") return ["ьва", "ьву", "ьва", "ьвом", "ьве"]
-  if (key === "петр") return ["етра", "етру", "етра", "етром", "етре"]
-  if (key === "павел") return ["ла", "лу", "ла", "лом", "ле"]
-  if (key === "илья") return ["и", "е", "ю", "ёй", "е"]
+  if (key === "лев") return { cut: 2, mod: ["ьва", "ьву", "ьва", "ьвом", "ьве"] }
+  if (key === "петр") return { cut: value.length, mod: ["петра", "петру", "петра", "петром", "петре"] }
+  if (key === "павел") return { cut: 2, mod: ["ла", "лу", "ла", "лом", "ле"] }
+  if (key === "илья") return { cut: 1, mod: ["и", "е", "ю", "ёй", "е"] }
   if (/[еёиоуыэю]$/u.test(key)) return null
-  if (gender === "female" && /ь$/u.test(key)) return ["и", "и", "", "ю", "и"]
-  if (/ия$/u.test(key)) return ["и", "и", "ю", "ей", "и"]
-  if (/я$/u.test(key)) return ["и", "е", "ю", "ей", "е"]
-  if (/[гкхжчшщ]а$/u.test(key)) return ["и", "е", "у", "ой", "е"]
-  if (/а$/u.test(key)) return ["ы", "е", "у", "ой", "е"]
+  if (gender === "female" && key.endsWith("ь")) return { cut: 1, mod: ["и", "и", "", "ю", "и"] }
+  if (key.endsWith("ия")) return { cut: 1, mod: ["и", "и", "ю", "ей", "и"] }
+  if (key.endsWith("я")) return { cut: 1, mod: ["и", "е", "ю", "ей", "е"] }
+  if (/[гкхжчшщ]а$/u.test(key)) return { cut: 1, mod: ["и", "е", "у", "ой", "е"] }
+  if (key.endsWith("а")) return { cut: 1, mod: ["ы", "е", "у", "ой", "е"] }
   if (gender === "female") return null
-  if (/ий$/u.test(key)) return ["я", "ю", "я", "ем", "и"]
-  if (/й$/u.test(key)) return ["я", "ю", "я", "ем", "е"]
-  if (/ь$/u.test(key)) return ["я", "ю", "я", "ем", "е"]
-  if (SIBILANT.test(key)) return ["а", "у", "а", "ем", "е"]
-  return ["а", "у", "а", "ом", "е"]
+  if (key.endsWith("ий")) return { cut: 1, mod: ["я", "ю", "я", "ем", "и"] }
+  if (key.endsWith("й")) return { cut: 1, mod: ["я", "ю", "я", "ем", "е"] }
+  if (key.endsWith("ь")) return { cut: 1, mod: ["я", "ю", "я", "ем", "е"] }
+  if (SIBILANT.test(key)) return { cut: 0, mod: ["а", "у", "а", "ем", "е"] }
+  return { cut: 0, mod: ["а", "у", "а", "ом", "е"] }
 }
 
-function patronymicMod(value: string): Mod | null {
+function patronymicMod(value: string): { mod: Mod; cut: number } | null {
   const key = fold(value)
-  if (/ич$/u.test(key)) return ["а", "у", "а", "ем", "е"]
-  if (/на$/u.test(key)) return ["ы", "е", "у", "ой", "е"]
+  if (key.endsWith("ич")) return { cut: 0, mod: ["а", "у", "а", "ем", "е"] }
+  if (key.endsWith("на")) return { cut: 1, mod: ["ы", "е", "у", "ой", "е"] }
   return null
 }
 
@@ -98,21 +110,18 @@ function declinePart(
   return value
     .split("-")
     .map((part) => {
-      if (grammaticalCase === "nominative" || part.length === 0) return part
-      const mod =
+      if (part.length === 0) return part
+      const rule =
         kind === "surname"
           ? surnameMod(part, gender)
           : kind === "given"
             ? givenMod(part, gender)
             : patronymicMod(part)
-      const cut = /^(?:лев|петр|павел)$/u.test(fold(part))
-        ? 2
-        : /[аяьй]$/u.test(fold(part))
-          ? 1
-          : 0
-      if (mod === null) return part
-      const ending = mod[GRAMMATICAL_CASES.indexOf(grammaticalCase) - 1]
-      return ending === undefined ? part : stem(part, cut) + ending
+      if (rule === null) return part
+      const next = apply(part, rule.mod, rule.cut, grammaticalCase)
+      if (fold(part) !== "петр") return next
+      const first = part[0]
+      return first === undefined ? next : first.toLocaleUpperCase("ru") + next.slice(1)
     })
     .join("-")
 }
@@ -122,8 +131,9 @@ function joinName(parts: readonly string[]): string {
 }
 
 /**
- * Склоняет уже принятые части по собственным правилам.
+ * Склоняет уже принятые части по таблице правил.
  * Неуверенный пол сюда не передаётся: вызывающий код сам решает, что делать с `null`.
+ * Окончание вне таблицы возвращается без изменений.
  */
 export function declineFio(
   values: { surname?: string; given?: string; patronymic?: string },

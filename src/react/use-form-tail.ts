@@ -9,6 +9,8 @@ export interface FormTailEngine {
   ): Suggestion | null | Promise<Suggestion | null>
   commit(value: string): void
   filter(input: string): string
+  /** Синхронно сообщает новое value до suggest. Связка полей читает его в том же тике. */
+  observe?: (value: string) => void
 }
 
 export interface UseFormTailOptions {
@@ -48,13 +50,17 @@ export function useFormTail(options: UseFormTailOptions): UseFormTailResult {
   const contextRef = useRef(context)
   const onChangeRef = useRef(onChange)
   const onCommitRef = useRef(onCommit)
+  const valueRef = useRef(options.value ?? options.defaultValue ?? "")
   engineRef.current = engine
   contextRef.current = context
   onChangeRef.current = onChange
   onCommitRef.current = onCommit
+  if (options.value !== undefined) valueRef.current = options.value
   const value = options.value ?? uncontrolled
 
   const publish = useCallback((next: string) => {
+    valueRef.current = next
+    engineRef.current.observe?.(next)
     if (options.value === undefined) setUncontrolled(next)
     onChangeRef.current?.(next)
   }, [options.value])
@@ -67,6 +73,11 @@ export function useFormTail(options: UseFormTailOptions): UseFormTailResult {
         if (current !== request.current) return
         suggestionRef.current = nextSuggestion
         setSuggestion(nextSuggestion)
+      },
+      () => {
+        if (current !== request.current) return
+        suggestionRef.current = null
+        setSuggestion(null)
       },
     )
   }, [])
@@ -110,7 +121,7 @@ export function useFormTail(options: UseFormTailOptions): UseFormTailResult {
       event.preventDefault()
     },
     onBlur() {
-      commitWholeToken(value)
+      commitWholeToken(valueRef.current)
       setSuggestion(null)
     },
   }
