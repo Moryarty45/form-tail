@@ -59,7 +59,6 @@ const entries = [
   { value: "Видина", weight: 1, gender: "female" },
   { value: "Викентий", weight: 1, gender: "male" },
   { value: "Викентия", weight: 1, gender: "female" },
-  { value: "Виктбрия", weight: 1, gender: "female" },
   { value: "Виктор", weight: 1, gender: "male" },
   { value: "Викторин", weight: 1, gender: "male" },
   { value: "Викторина", weight: 1, gender: "female" },

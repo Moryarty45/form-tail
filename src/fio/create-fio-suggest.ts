@@ -11,7 +11,14 @@ import type {
   Suggestion,
   UsageStore,
 } from "../core/types.ts"
-import { inferGender, inferSurnameGender, resolveGender } from "./gender.ts"
+import { declineFio, type Declension } from "./decline.ts"
+import {
+  inferGender,
+  inferPatronymicGender,
+  inferSurnameGender,
+  resolveBundleGender,
+  type GenderSource,
+} from "./gender.ts"
 
 /** Загружает одну буквенную корзину. Пустая буква — пустой список, не ошибка. */
 export interface LexiconSource {
@@ -40,15 +47,21 @@ export interface FioSuggest {
   given: FioPart
   patronymic: FioPart
   /**
-   * Пол по текущим значениям имени и отчества этой формы.
-   * Фамилия в выводе не участвует.
+   * Пол по текущим значениям этой формы.
+   * Явный пол сильнее имени, имя сильнее отчества, отчество сильнее окончания фамилии.
    */
-  gender(values: { given?: string; patronymic?: string }): Promise<Gender>
+  gender(values: FioContext & { gender?: Gender }): Promise<Gender>
+  /**
+   * Шесть падежей уже принятого ФИО для вставки в документ.
+   * `null`, если пол не уверенный: библиотека падеж не угадывает.
+   * Предлог не добавляет.
+   */
+  decline(values: FioContext & { gender?: Gender }): Promise<Declension | null>
 }
 
 /** Текущие соседние поля этой формы. На частоты не влияют. */
 export interface FioContext {
-  /** Текущая фамилия. Её окончание может задать пол имени и отчества. */
+  /** Текущая фамилия. Её окончание может задать пол, если имя и отчество молчат. */
   surname?: string
   /** Текущее имя. Нужно отчеству, чтобы отсечь чужой пол. */
   given?: string
@@ -66,6 +79,11 @@ export interface FioPart {
   commit(value: string): void
   /** В строгом режиме выкидывает нерусские символы. Выключенная часть не фильтрует. */
   filter(input: string): string
+}
+
+export interface ResolvedFioGender {
+  gender: Gender
+  source: GenderSource
 }
 
 /**
@@ -125,6 +143,42 @@ export function createFioSuggest(options: CreateFioSuggestOptions): FioSuggest {
     return formatName(filterInput(input, mode))
   }
 
+  async function genderOf(part: NamePart, input: string): Promise<Gender> {
+    if (input.trim().length < 2) return "unknown"
+    const entries = await load(part, input)
+    const fromLexicon = inferGender(entries, input, foldYo)
+    if (fromLexicon !== "unknown" || part !== "patronymic") return fromLexicon
+    return inferPatronymicGender(input, foldYo)
+  }
+
+  async function resolve(values: FioContext & { gender?: Gender }): Promise<ResolvedFioGender> {
+    const [given, patronymic] = await Promise.all([
+      genderOf("given", values.given ?? ""),
+      genderOf("patronymic", values.patronymic ?? ""),
+    ])
+    return resolveBundleGender({
+      ...(values.gender === undefined ? {} : { explicit: values.gender }),
+      given,
+      patronymic,
+      surname: inferSurnameGender(values.surname ?? "", foldYo),
+    })
+  }
+
+  async function suggestPart(
+    part: "given" | "patronymic",
+    input: string,
+    suggestOptions: (SuggestOptions & FioContext) | undefined,
+  ): Promise<Suggestion | null> {
+    const entries = await load(part, input)
+    const resolved = await resolve({
+      surname: suggestOptions?.surname ?? "",
+      given: part === "given" ? input : (suggestOptions?.given ?? ""),
+      patronymic: part === "patronymic" ? input : (suggestOptions?.patronymic ?? ""),
+      ...(suggestOptions?.gender === undefined ? {} : { gender: suggestOptions.gender }),
+    })
+    return suggestWith(part, input, entries, resolved.gender)
+  }
+
   return {
     surname: {
       async suggest(input) {
@@ -136,57 +190,26 @@ export function createFioSuggest(options: CreateFioSuggestOptions): FioSuggest {
       filter: (input) => filter("surname", input),
     },
     given: {
-      async suggest(input, suggestOptions) {
-        const [entries, sibling] = await Promise.all([
-          load("given", input),
-          genderOf("patronymic", suggestOptions?.patronymic ?? ""),
-        ])
-        const surnameGender = inferSurnameGender(suggestOptions?.surname ?? "", foldYo)
-        const gender = resolveGender(
-          suggestOptions?.gender,
-          surnameGender !== "unknown"
-            ? surnameGender
-            : sibling !== "unknown"
-              ? sibling
-              : inferGender(entries, input, foldYo),
-        )
-        return suggestWith("given", input, entries, gender)
-      },
+      suggest: (input, suggestOptions) => suggestPart("given", input, suggestOptions),
       commit(value) {
         commitPart("given", value)
       },
       filter: (input) => filter("given", input),
     },
     patronymic: {
-      async suggest(input, suggestOptions) {
-        const [entries, sibling] = await Promise.all([
-          load("patronymic", input),
-          genderOf("given", suggestOptions?.given ?? ""),
-        ])
-        const surnameGender = inferSurnameGender(suggestOptions?.surname ?? "", foldYo)
-        const gender = resolveGender(
-          suggestOptions?.gender,
-          sibling !== "unknown" ? sibling : surnameGender,
-        )
-        return suggestWith("patronymic", input, entries, gender)
-      },
+      suggest: (input, suggestOptions) => suggestPart("patronymic", input, suggestOptions),
       commit(value) {
         commitPart("patronymic", value)
       },
       filter: (input) => filter("patronymic", input),
     },
     async gender(values) {
-      const [fromGiven, fromPatronymic] = await Promise.all([
-        genderOf("given", values.given ?? ""),
-        genderOf("patronymic", values.patronymic ?? ""),
-      ])
-      if (fromGiven !== "unknown") return fromGiven
-      return fromPatronymic
+      return (await resolve(values)).gender
     },
-  }
-
-  async function genderOf(part: NamePart, input: string): Promise<Gender> {
-    if (input.trim().length < 2) return "unknown"
-    return inferGender(await load(part, input), input, foldYo)
+    async decline(values) {
+      const resolved = await resolve(values)
+      if (resolved.gender === "unknown") return null
+      return declineFio(values, resolved.gender)
+    },
   }
 }

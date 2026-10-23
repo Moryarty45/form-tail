@@ -342,7 +342,6 @@
 Видина|1|female
 Викентий|1|male
 Викентия|1|female
-Виктбрия|1|female
 Виктор|1|male
 Викторин|1|male
 Викторина|1|female
@@ -447,7 +446,7 @@
 Глафира|1|female
 Глеб|1|male
 Гликерия|1|female
-Глорибза|1|female
+Глориба|1|female
 Глория|1|female
 Гней|1|male
 Гоар|1|male
@@ -464,7 +463,7 @@
 Градислава|1|female
 Гражина|1|female
 Грета|1|female
-Григорий|1|unknown
+Григорий|1|male
 Гримоальд|1|male
 Гуго|1|male
 Гулара|1|female
@@ -657,7 +656,7 @@
 Зосима|1|male
 Зоя|1|female
 Зульфия|1|female
-Зураб|1|female
+Зураб|1|male
 Зухра|1|female
 Иакинф|1|male
 Иан|1|male

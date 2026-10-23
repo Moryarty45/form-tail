@@ -21,4 +21,12 @@ export type {
   UsageStore,
 } from "./core/index.ts"
 export { createFioSuggest, inferGender } from "./fio/index.ts"
-export type { CreateFioSuggestOptions, FioContext, FioSuggest, LexiconSource } from "./fio/index.ts"
+export type {
+  CreateFioSuggestOptions,
+  Declension,
+  DeclinedName,
+  FioContext,
+  FioSuggest,
+  GrammaticalCase,
+  LexiconSource,
+} from "./fio/index.ts"

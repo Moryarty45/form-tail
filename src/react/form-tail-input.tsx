@@ -47,7 +47,7 @@ export function FormTailInput({
         onBlur={field.onBlur}
         autoComplete="off"
         aria-autocomplete="none"
-        style={{ ...inputProps.style, gridArea: "1 / 1" }}
+        style={{ gridArea: "1 / 1" }}
       />
       {field.completion.length > 0 ? (
         <span

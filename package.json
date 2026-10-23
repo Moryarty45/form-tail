@@ -1,6 +1,6 @@
 {
   "name": "form-tail",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Дописывает хвост значения в поле формы. Первая поставка — фамилия, имя и отчество.",
   "type": "module",
   "license": "MIT",
@@ -35,7 +35,6 @@
   "types": "./dist/index.d.ts",
   "scripts": {
     "build:lexicon": "tsx scripts/build-lexicon.ts",
-    "import:lists": "tsx scripts/import-source-lists.ts",
     "check:lexicon": "tsx scripts/check-lexicon.ts",
     "build": "tsup",
     "dev": "tsx scripts/dev.ts",

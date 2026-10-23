@@ -50,3 +50,37 @@ button {
   color: white;
   font: inherit;
 }
+
+.hint,
+table {
+  margin-top: 1.5rem;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+caption {
+  margin-bottom: 0.6rem;
+  text-align: left;
+  font-weight: 600;
+}
+
+th,
+td {
+  padding: 0.45rem 0;
+  border-bottom: 1px solid #e4ddd2;
+  text-align: left;
+  vertical-align: top;
+}
+
+th {
+  width: 9rem;
+  color: #6f685e;
+  font-weight: 500;
+}
+
+.hint {
+  color: #6f685e;
+}

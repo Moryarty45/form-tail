@@ -32,7 +32,7 @@ const entries = [
   { value: "Зосима", weight: 1, gender: "male" },
   { value: "Зоя", weight: 1, gender: "female" },
   { value: "Зульфия", weight: 1, gender: "female" },
-  { value: "Зураб", weight: 1, gender: "female" },
+  { value: "Зураб", weight: 1, gender: "male" },
   { value: "Зухра", weight: 1, gender: "female" },
 ] as const satisfies readonly LexiconEntry[]
 

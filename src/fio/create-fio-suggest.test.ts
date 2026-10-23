@@ -91,6 +91,28 @@ describe("createFioSuggest", () => {
     const second = createFioSuggest({ locale: "ru", store, lexicons: source() })
     first.given.commit("Алексей")
     expect((await second.given.suggest("Алек"))?.completion).toBe("сей")
-    expect((await second.surname.suggest("Алек"))).toBeNull()
+    expect(await second.surname.suggest("Алек")).toBeNull()
+  })
+
+  it("конфликт имени и отчества не выбирает пол и не склоняет", async () => {
+    const fio = createFioSuggest({ locale: "ru", lexicons: source() })
+    expect(await fio.gender({ given: "Алексей", patronymic: "Ивановна", surname: "Иванова" })).toBe(
+      "unknown",
+    )
+    expect((await fio.patronymic.suggest("Иван", { given: "Алексей" }))?.value).toBe("Иванович")
+    expect(
+      await fio.decline({ surname: "Иванова", given: "Алексей", patronymic: "Ивановна" }),
+    ).toBeNull()
+  })
+
+  it("уверенная связка склоняется, неполная без пола не склоняется", async () => {
+    const fio = createFioSuggest({ locale: "ru", lexicons: source() })
+    const declined = await fio.decline({
+      surname: "Иванова",
+      given: "Мария",
+      patronymic: "Сергеевна",
+    })
+    expect(declined?.cases.dative.full).toBe("Ивановой Марии Сергеевне")
+    expect(await fio.decline({ surname: "Шевченко" })).toBeNull()
   })
 })
