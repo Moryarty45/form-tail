@@ -1,0 +1,52 @@
+body {
+  margin: 0;
+  background: #f6f4ef;
+  color: #1d1c19;
+  font: 16px/1.4 "Segoe UI", sans-serif;
+}
+
+main {
+  width: min(32rem, calc(100% - 2rem));
+  margin: 3rem auto;
+}
+
+form,
+label {
+  display: grid;
+  gap: 0.4rem;
+}
+
+form {
+  gap: 1rem;
+}
+
+.field,
+.tail,
+.field input {
+  box-sizing: border-box;
+  width: 100%;
+  padding: 0.7rem 0.8rem;
+  font: inherit;
+  letter-spacing: inherit;
+}
+
+.field input {
+  border: 1px solid #c8c2b6;
+  border-radius: 0.4rem;
+  background: transparent;
+  color: inherit;
+}
+
+.tail {
+  color: #9a9388;
+}
+
+button {
+  width: fit-content;
+  padding: 0.6rem 0.9rem;
+  border: 0;
+  border-radius: 0.4rem;
+  background: #2f5d50;
+  color: white;
+  font: inherit;
+}

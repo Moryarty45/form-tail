@@ -1,0 +1,38 @@
+import type { LexiconEntry } from "../../../core/types.ts"
+
+const entries = [
+  { value: "Хаврония", weight: 1, gender: "female" },
+  { value: "Хайме", weight: 1, gender: "male" },
+  { value: "Халима", weight: 1, gender: "female" },
+  { value: "Ханс", weight: 1, gender: "male" },
+  { value: "Харальд", weight: 1, gender: "male" },
+  { value: "Хариесса", weight: 1, gender: "female" },
+  { value: "Хариса", weight: 1, gender: "female" },
+  { value: "Харита", weight: 1, gender: "female" },
+  { value: "Харитина", weight: 1, gender: "female" },
+  { value: "Харитон", weight: 1, gender: "male" },
+  { value: "Харри", weight: 1, gender: "male" },
+  { value: "Харрисон", weight: 1, gender: "male" },
+  { value: "Хасан", weight: 1, gender: "male" },
+  { value: "Хетаг", weight: 1, gender: "male" },
+  { value: "Хильда", weight: 1, gender: "female" },
+  { value: "Хильдегарда", weight: 1, gender: "female" },
+  { value: "Хильдерик", weight: 1, gender: "male" },
+  { value: "Хиония", weight: 1, gender: "female" },
+  { value: "Хирам", weight: 1, gender: "male" },
+  { value: "Хлодвиг", weight: 1, gender: "male" },
+  { value: "Хокон", weight: 1, gender: "male" },
+  { value: "Хорив", weight: 1, gender: "male" },
+  { value: "Хоселито", weight: 1, gender: "male" },
+  { value: "Хосрой", weight: 1, gender: "male" },
+  { value: "Хриса", weight: 1, gender: "female" },
+  { value: "Хрисанф", weight: 1, gender: "male" },
+  { value: "Хрисия", weight: 1, gender: "female" },
+  { value: "Христиана", weight: 1, gender: "female" },
+  { value: "Христина", weight: 1, gender: "female" },
+  { value: "Христофор", weight: 1, gender: "male" },
+  { value: "Христя", weight: 1, gender: "female" },
+  { value: "Хуан", weight: 1, gender: "male" },
+] as const satisfies readonly LexiconEntry[]
+
+export default entries

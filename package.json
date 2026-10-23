@@ -1,0 +1,75 @@
+{
+  "name": "form-tail",
+  "version": "0.1.0",
+  "description": "Дописывает хвост значения в поле формы. Первая поставка — фамилия, имя и отчество.",
+  "type": "module",
+  "license": "MIT",
+  "engines": {
+    "node": ">=20"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "sideEffects": false,
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    },
+    "./react": {
+      "types": "./dist/react/index.d.ts",
+      "import": "./dist/react/index.js",
+      "require": "./dist/react/index.cjs"
+    },
+    "./ru": {
+      "types": "./dist/ru/index.d.ts",
+      "import": "./dist/ru/index.js",
+      "require": "./dist/ru/index.cjs"
+    }
+  },
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "build:lexicon": "tsx scripts/build-lexicon.ts",
+    "import:lists": "tsx scripts/import-source-lists.ts",
+    "check:lexicon": "tsx scripts/check-lexicon.ts",
+    "build": "tsup",
+    "dev": "tsx scripts/dev.ts",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "typecheck": "tsc --noEmit -p tsconfig.json && tsc --noEmit -p tsconfig.react.json",
+    "prepublishOnly": "npm run build:lexicon && npm run check:lexicon && npm run build"
+  },
+  "peerDependencies": {
+    "react": "^18.0.0 || ^19.0.0"
+  },
+  "peerDependenciesMeta": {
+    "react": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "@testing-library/react": "^16.3.0",
+    "@types/react": "^19.1.8",
+    "@typescript-eslint/eslint-plugin": "^8.38.0",
+    "@typescript-eslint/parser": "^8.38.0",
+    "eslint": "^9.31.0",
+    "eslint-config-prettier": "^10.1.5",
+    "esbuild": "0.28.2",
+    "jsdom": "^26.1.0",
+    "prettier": "^3.6.2",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0",
+    "tsup": "^8.5.0",
+    "tsx": "^4.20.3",
+    "typescript": "^5.8.3",
+    "vitest": "^3.2.4"
+  }
+}
